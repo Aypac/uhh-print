@@ -31,6 +31,8 @@
 
 
 #### HOW TO INSTALL THE SCRIPT #####
+# Check for new Version:
+https://github.com/Aypac/uhh-print
 # Required
 Download and install "Cygwin" from http://www.cygwin.com/install.html
 While installing be sure to include ssh, scp, tcl, expect and expectk in the installation.
@@ -68,14 +70,7 @@ If you have a solution please contact me!
 
 #### DONATE ####
 This took me ages to programm and can save you eternities and many pages.
-Please consider donating!
-
-ACCOUNT HOLDER            RENE VOLLMER
-IBAN            DE54201901090019131740
-BIC                        GENODEF1HH4
-                 OR
-KTNO                          19131740
-BLZ                           20190109
+Please consider donating; You'll find a Flattr-Button here: https://github.com/Aypac/uhh-print
 
 Also very appreciated is an invite for a beer, coffee, tea, ...
  => RENE.VOLLMER@GMAIL.COM

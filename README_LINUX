@@ -3,8 +3,8 @@
 ##########################################################################################
 ############################## UHH PHYSNET PRINTING SCRIPT  ##############################
 ##############################         ( README )           ##############################
-##############################        VERSION 0.4b          ##############################
-##############################    (C) RENÉ VOLLMER 2014     ##############################
+##############################        VERSION 0.5           ##############################
+##############################    (C) RENÉ VOLLMER 2015     ##############################
 ##############################    RENE.VOLLMER@GMAIL.COM    ##############################
 ##############################         WWW.AYPAC.DE         ##############################
 ##########################################################################################
@@ -29,6 +29,9 @@
 
 
 #### HOW TO INSTALL THE SCRIPT #####
+# Check for new Version:
+https://github.com/Aypac/uhh-print
+
 # Required libs
 sudo apt-get install expect
 sudo apt-get install expectk
@@ -64,14 +67,9 @@ Drag and drop the icon into the starter on the left
 
 #### DONATE ####
 This took me ages to programm and can save you eternities and many pages.
-Please consider donating!
+Please consider donating; You'll find a Flattr-Button here: https://github.com/Aypac/uhh-print
 
-ACCOUNT HOLDER            RENE VOLLMER
-IBAN            DE54201901090019131740
-BIC                        GENODEF1HH4
-                 OR
-KTNO                          19131740
-BLZ                           20190109
+
 
 Also very appreciated is an invite for a beer, coffee, tea, ...
  => RENE.VOLLMER@GMAIL.COM

@@ -3,13 +3,19 @@ set timeout -1
 
 #### BEGIN: VAR INIT ####
 #\/ You can set your default values here. \/
-set ACCOUNT "rvollmer"
+
+
+set ACCOUNT "mmusterm"
+#Would not set password!
+set PW ""
 #Your physnet-account, the same as in the pool-rooms
 
-set FOLDER "/media/rene/DATA/Dropbox/"
+
+set FOLDER "/home/rene/print/"
 #The Folder from where the file shall be printed
 
 set PRINTER "Any-Free-Pool2-Printer"
+#set PRINTER "apr-flaser"
 #Name			Beschreibung	Raum
 #laser31		AP-SW-Laser	308
 #apr-flaser		AP-Farbe	308
@@ -27,7 +33,6 @@ set SERVER "asterix01.physnet.uni-hamburg.de"
 # \/ Don't edit this stuff \/
 set REMOTEFOLDER "print"
 set LPR "lpr -E -o PageSize=A4"
-set PW "" #Would not set this!
 set printfiles { }
 set uploadfiles ""
 #### END: VAR INIT ####
@@ -76,7 +81,7 @@ sendColor blue "################################################################
 sendColor blue "###############################################################################\n"
 sendColor blue "THIS SCRIPT WILL ASK YOU HOW TO PRINT ALL PDF-FILES INSIDE A SPECIFIED FOLDER\n"
 send_user -- "\nTIPS:\n"
-send_user red "- Read the README\n"
+sendColor red "- Read the README\n"
 send_user -- "- Report errors to UHHPRINTING@AYPAC.DE\n"
 send_user -- "- You can stop this script any time with CTRL+C or by entering exit\n"
 send_user -- "- Avoid using ~ , better use /home/yourhomefolder/\n"
@@ -125,10 +130,22 @@ proc defaultize {function paramsA default} {
 
 #Reads in a folder-path
 proc getFolderInput text {
-	set f [makeAbsolute [getInput $text]]
+	set f "\0"
 	while {[file isdirectory $f] != 1} {
-		sendColor yellow "Not a valid folder, enter again.\n"
-		set f [makeAbsolute [getInput "$text"]]
+		set a [getInput $text]
+		if { $a == "~" } {
+			set a $::env(HOME)
+		}
+		if { $a != "" } {
+			set f [makeAbsolute $a]
+			if { [file isdirectory $f] != 1 } {
+				sendColor yellow "Not a valid folder, enter again.\n"
+			} else {
+				return $f
+			}
+		} else {
+			return ""
+		}
 	}
 	return $f
 }
@@ -469,13 +486,13 @@ proc generate_setting_string {perPage order binding double pages no custom order
 #Read in the folder, from which all pdf shall be printed
 set param "Specify the Folder with the PDFs which shall be printed: (Just press Enter for $FOLDER)"
 set FOLDER [defaultize "getFolderInput" [list $param] $FOLDER]
+send_user -- "$FOLDER selected.\n\n"
 cd $FOLDER
 #Read in the Username and password for the Server
 send_user -- "Please enter your credentials for \"$SERVER\":\n(Your physnet-account, the same as in the pool-rooms)\n"
 set param "Username? (Just Press Enter for $ACCOUNT)"
 set ACCOUNT [defaultize "getInput" [list $param] $ACCOUNT]
-set PW [getPwInput "Password?"]
-
+set PW [defaultize "getPwInput" [list "Password?"] $PW]
 
 set param "Is this the first time you run this script for $ACCOUNT ? (y/n (default))"
 set firstTime [defaultize "getInput" [list $param] $FOLDER]
@@ -543,7 +560,7 @@ my_scp_multi $ACCOUNT $SERVER $PW $uploadfiles "$REMOTEFOLDER/"
 sendColor yellow "\nDone uploading. Start printing...\n"
 
 #### +++ send the printing commands
-set printfiles [addPrintFile $printfiles "lpq$PRINTER"]
+set printfiles [addPrintFile $printfiles "lpq$PRINTER +1"]
 my_ssh $ACCOUNT $SERVER $PW $printfiles
 
 #### +++ END +++
