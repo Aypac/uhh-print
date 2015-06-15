@@ -4,7 +4,7 @@ set timeout -1
 ###############################################################################
 ###############################################################################
 ######################### UHH PHYSNET PRINTING SCRIPT  ########################
-#########################        VERSION 0.4b          ########################
+#########################        VERSION 0.4c          ########################
 #########################    (C) RENÉ VOLLMER 2014     ########################
 #########################    RENE.VOLLMER@GMAIL.COM    ########################
 #########################         WWW.AYPAC.DE         ########################
@@ -16,7 +16,7 @@ set timeout -1
 #### BEGIN: VAR INIT ####
 #\/ You can set your default values here. \/
 set ACCOUNT "rvollmer"
-set FOLDER "~/printfiles"
+set FOLDER "/home/rene"
 set PRINTER "laser30"
 set SERVER "asterix01.physnet.uni-hamburg.de"
 # \/ Don't edit this stuff \/
@@ -423,7 +423,7 @@ sendColor blue "################################################################
 sendColor blue "###############################################################################\n"
 sendColor blue "###############################################################################\n"
 sendColor blue "######################### UHH PHYSNET PRINTING SCRIPT  ########################\n"
-sendColor blue "#########################        VERSION 0.4b          ########################\n"
+sendColor blue "#########################        VERSION 0.4c          ########################\n"
 sendColor blue "#########################    (C) RENÉ VOLLMER 2014     ########################\n"
 sendColor blue "#########################    RENE.VOLLMER@GMAIL.COM    ########################\n"
 sendColor blue "#########################         WWW.AYPAC.DE         ########################\n"
@@ -482,14 +482,20 @@ foreach f $files {
 	set remotef "$REMOTEFOLDER/$fname"
 	send_user -- "- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -\n"
 	set sel "n"
-	set sel [getInput "Print $fname? (y|n)"]
+	set sel [getInput "How many times shall I print $fname with different settings? (0 for no copies (default))"]
 	
-	if {$sel != "n"} {
-		set str [get_settings void]
-		send_user -- "Will print $fname with \"$str\".\n"
-
-		#Add files to upload-List and to print-list
-		set printfiles [addPrintFile $printfiles "$LPR$PRINTER$str '$remotef'"]
+	if {$sel != "0"} {
+		for {set x 0} {$x<
+$sel} {incr x} {
+			set a $x
+			incr a
+			send_user -- "---> $a/$sel copy of $fname:\n"
+			set str [get_settings void]
+			send_user -- "Will print $fname with \"$str\".\n"
+	
+			#Add files to upload-List and to print-list
+			set printfiles [addPrintFile $printfiles "$LPR$PRINTER$str '$remotef'"]
+		}
 		set uploadfiles [addUploadFile $uploadfiles $fname]
 	} else {
 		send_user -- "Not printing $fname.\n"
