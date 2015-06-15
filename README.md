@@ -26,8 +26,6 @@ Extract the zip into that folder. Then:
 
 sudo chmod +x ~/UH\ PRINT/uhhprint.exp
 
-scp ~/UH\ PRINT/remote_printScript_file.sh yourusername@asterix01.physnet.uni-hamburg.de:~/
-
 create a file Deckblatt.pdf like the one in the zip inside this folder. You can use e.g. open office for this. Then:
 
 scp ~/UH\ PRINT/Deckblatt.pdf yourusername@asterix01.physnet.uni-hamburg.de:~/print/
