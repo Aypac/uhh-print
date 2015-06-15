@@ -1,0 +1,96 @@
+##########################################################################################
+##########################################################################################
+##########################################################################################
+############################## UHH PHYSNET PRINTING SCRIPT  ##############################
+##############################         ( README )           ##############################
+##############################        VERSION 0.4b          ##############################
+##############################    (C) RENÉ VOLLMER 2014     ##############################
+##############################    RENE.VOLLMER@GMAIL.COM    ##############################
+##############################         WWW.AYPAC.DE         ##############################
+##########################################################################################
+##########################################################################################
+##########################################################################################
+#                                                                                        #
+# This script is desinged for printing in the physnet remotely from your PC, preferably  #
+# running linux (developed under Ubuntu).                                                #
+#                                                                                        #
+##########################################################################################
+
+|_|0|_|
+|_|_|0|
+|0|0|0|
+
+#### WHAT YOU'LL NEED #####
+-The files you want to print as PDFs without password in one folder
+-Your Physnet-Username (Usually first letter of your first- and first seven letters of
+	your lastname; e.g. rvollmer for René Vollmer)
+-The password
+-Internet-Access
+
+
+#### HOW TO INSTALL THE SCRIPT #####
+# Required libs
+sudo apt-get install expect
+sudo apt-get install expectk
+more: http://www.cyberciti.biz/tips/execute-commands-on-multiple-hosts-using-expect-tool-part-iii.html
+
+mkdir ~/UH\ PRINT/
+
+Extract the zip into that folder. Then:
+sudo chmod +x ~/UH\ PRINT/uhhprint.exp
+scp ~/UH\ PRINT/remote_printScript_file.sh yourusername@asterix01.physnet.uni-hamburg.de:~/
+
+create a file Deckblatt.pdf like the one in the zip inside this folder. You can use e.g. open office for this. Then:
+scp ~/UH\ PRINT/Deckblatt.pdf yourusername@asterix01.physnet.uni-hamburg.de:~/print/
+or just start the script and select s when asked for the Cover page.
+
+# Advanced
+You can open the .exp-Files with an editor of your choice and edit the default values.
+
+# Recommended
+sudo cp ~/UH\ PRINT/uhhprint.exp /bin/uhhprint
+sudo chmod +x /bin/uhhprint
+enables you to start the script with the command "uhhprint"
+You have to repeat that with any change in default values or new versions.
+
+# Cool: Quickstarter for Ubuntu
+sudo apt-get install gnome-tweak-tool gnome-panel
+gnome-desktop-item --create-new ~/UH PRINT/launcher.desktop
+Select:
+*Aplication in Terminal
+*uhhprint
+*Name, icon and description desired
+Drag and drop the icon into the starter on the left
+
+#### DONATE ####
+This took me ages to programm and can save you eternities and many pages.
+Please consider donating!
+
+ACCOUNT HOLDER            RENE VOLLMER
+IBAN            DE54201901090019131740
+BIC                        GENODEF1HH4
+                 OR
+KTNO                          19131740
+BLZ                           20190109
+
+Also very appreciated is an invite for a beer, coffee, tea, ...
+ => RENE.VOLLMER@GMAIL.COM
+
+##########################################################################################
+##########################################################################################
+
+
+#### REMINDERS FOR ME ####
+
+#write-a-shell-script-to-ssh-to-a-remote-machine-and-execute-commands
+#http://stackoverflow.com/questions/13928116/write-a-shell-script-to-ssh-to-a-remote-machine-and-execute-commands
+
+#Expect
+#http://www.linuxcommand.org/man_pages/expect1.html
+
+#Expect in Bash
+#http://stackoverflow.com/questions/5575702/help-with-expect-within-a-bash-script
+
+##########################################################################################
+##########################################################################################
+

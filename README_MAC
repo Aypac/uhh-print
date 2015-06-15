@@ -1,0 +1,72 @@
+##########################################################################################
+##########################################################################################
+##########################################################################################
+############################## UHH PHYSNET PRINTING SCRIPT  ##############################
+##############################         ( README )           ##############################
+##############################        VERSION 0.1b          ##############################
+##############################    (C) RENÉ VOLLMER 2014     ##############################
+##############################    RENE.VOLLMER@GMAIL.COM    ##############################
+##############################         WWW.AYPAC.DE         ##############################
+##########################################################################################
+##########################################################################################
+##########################################################################################
+#                                                                                        #
+# This script is desinged for printing in the physnet remotely from your PC, preferably  #
+# running linux (developed under Ubuntu).                                                #
+# This is the beta-instructions for mac.                                                  #
+#                                                                                        #
+##########################################################################################
+
+|_|0|_|
+|_|_|0|
+|0|0|0|
+
+#### WHAT YOU'LL NEED #####
+-The files you want to print as PDFs without password in one folder
+-Your Physnet-Username (Usually first letter of your first- and first seven letters of
+	your lastname; e.g. rvollmer for René Vollmer)
+-The password
+-Internet-Access
+
+Google mac ports
+
+
+#### HOW TO INSTALL THE SCRIPT #####
+# Required libs
+expect
+expectk
+(They are usually pre-installed)
+more: http://www.cyberciti.biz/tips/execute-commands-on-multiple-hosts-using-expect-tool-part-iii.html
+mkdir ~/UH\ PRINT/
+sudo cp script-path ~/UH\ PRINT/uhhprint.exp
+sudo chmod +x ~/UH\ PRINT/uhhprint.exp
+scp ~/UH\ PRINT/remote_printScript_file.sh yourusername@asterix01.physnet.uni-hamburg.de:~/
+create a file Deckblatt.pdf like the one in the zip inside this folder. You can use e.g. open office for this. Then:
+scp ~/UH\ PRINT/Deckblatt.pdf yourusername@asterix01.physnet.uni-hamburg.de:~/print/
+or just start the script and select s when asked for the Cover page.
+
+# Advanced
+You can open the .exp-Files with an editor of your choice and edit the default values.
+
+# Recommended
+sudo cp ~/UH\ PRINT/uhhprint.exp /bin/uhhprint
+sudo chmod +x /bin/uhhprint
+enables you to start the script with the command "uhhprint"
+
+# Cool: Quickstarter for Mac
+In the dockbar:
+
+
+#### DONATE ####
+This took me ages to programm and can save you eternities and many pages.
+Please consider donating!
+
+ACCOUNT HOLDER            RENE VOLLMER
+IBAN            DE54201901090019131740
+BIC                        GENODEF1HH4
+                 OR
+KTNO                          19131740
+BLZ                           20190109
+
+Also very appreciated is an invite for a beer, coffee, tea, ...
+ => RENE.VOLLMER@GMAIL.COM

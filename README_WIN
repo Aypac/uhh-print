@@ -1,0 +1,82 @@
+##########################################################################################
+##########################################################################################
+##########################################################################################
+############################## UHH PHYSNET PRINTING SCRIPT  ##############################
+##############################         ( README )           ##############################
+##############################        VERSION 0.4b          ##############################
+##############################    (C) RENÉ VOLLMER 2014     ##############################
+##############################    RENE.VOLLMER@GMAIL.COM    ##############################
+##############################         WWW.AYPAC.DE         ##############################
+##########################################################################################
+##########################################################################################
+##########################################################################################
+#                                                                                        #
+# This script is desinged for printing in the physnet remotely from your PC, preferably  #
+# running linux (developed under Ubuntu).                                                #
+# Instructions for Windows                                                                            #
+#                                                                                        #
+##########################################################################################
+
+|_|0|_|
+|_|_|0|
+|0|0|0|
+
+#### WHAT YOU'LL NEED #####
+-Cygwin
+-The files you want to print as PDFs without password in one folder
+-Your Physnet-Username (Usually first letter of your first- and first seven letters of
+	your lastname; e.g. rvollmer for René Vollmer)
+-The password
+-Internet-Access
+
+
+#### HOW TO INSTALL THE SCRIPT #####
+# Required
+Download and install "Cygwin" from http://www.cygwin.com/install.html
+While installing be sure to include ssh, scp, tcl, expect and expectk in the installation.
+Then extract the zip into the Cygwin-Home-Folder, something like "C:\Program Files\Cygwin\home\René".
+Be sure the folder is named "UH PRINT".
+You might want to bookmark the Cygwin-Home-Folder, you will need to put your PDFs somwhere into that one.
+
+Then start Cygwin and run
+chmod +x ~/UH\ PRINT/uhhprint.exp
+scp ~/UH\ PRINT/remote_printScript_file.sh yourusername@asterix01.physnet.uni-hamburg.de:~/
+
+create a file Deckblatt.pdf like the one in the zip inside this folder. You can use e.g. open office for this. Then run:
+scp ~/UH\ PRINT/Deckblatt.pdf yourusername@asterix01.physnet.uni-hamburg.de:~/print/
+inside the Cygwin-Console, or just start the script and select 's' when asked for the Cover page.
+
+Note that you can only print files that are contained within the Cygwin-Home-Folder.
+
+
+# Advanced
+You can open the .exp-Files with an editor of your choice and edit the default values.
+
+# Recommended
+sudo cp ~/UH\ PRINT/uhhprint.exp /bin/uhhprint
+sudo chmod 777 /bin/uhhprint
+enables you to start the script with the command "uhhprint"
+
+# Cool: Quickstarter for Windows
+No solution yet.
+There might be a solution in writing a batch-file, copying the files into the Cygwin-Home
+and then starting Cygwin with the script:
+http://smallbusiness.chron.com/run-cygwin-programs-cmdexe-50317.html
+http://cygwin.com/ml/cygwin/2006-07/msg00912.html
+If you have a solution please contact me!
+
+
+#### DONATE ####
+This took me ages to programm and can save you eternities and many pages.
+Please consider donating!
+
+ACCOUNT HOLDER            RENE VOLLMER
+IBAN            DE54201901090019131740
+BIC                        GENODEF1HH4
+                 OR
+KTNO                          19131740
+BLZ                           20190109
+
+Also very appreciated is an invite for a beer, coffee, tea, ...
+ => RENE.VOLLMER@GMAIL.COM
+

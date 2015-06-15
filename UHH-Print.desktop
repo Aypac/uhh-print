@@ -1,0 +1,13 @@
+#!/usr/bin/env xdg-open
+
+[Desktop Entry]
+Version=1.0
+Type=Application
+Terminal=true
+Icon[en_GB]=/usr/share/icons/gnome/scalable/devices/printer-symbolic.svg
+Name[en_GB]=UHH-Print
+Exec=uhhprint
+Comment[en_GB]=Console for printing in the Physnet
+Name=UHH-Print
+Comment=Console for printing in the Physnet
+Icon=/usr/share/icons/gnome/scalable/devices/printer-symbolic.svg

@@ -1,0 +1,516 @@
+#!/usr/bin/expect -f
+set timeout -1
+###############################################################################
+###############################################################################
+###############################################################################
+######################### UHH PHYSNET PRINTING SCRIPT  ########################
+#########################        VERSION 0.4b          ########################
+#########################    (C) RENÉ VOLLMER 2014     ########################
+#########################    RENE.VOLLMER@GMAIL.COM    ########################
+#########################         WWW.AYPAC.DE         ########################
+###############################################################################
+###############################################################################
+###############################################################################
+
+
+#### BEGIN: VAR INIT ####
+#\/ You can set your default values here. \/
+set ACCOUNT "rvollmer"
+set FOLDER "~/printfiles"
+set PRINTER "laser30"
+set SERVER "asterix01.physnet.uni-hamburg.de"
+# \/ Don't edit this stuff \/
+set REMOTEFOLDER "print"
+set LPR "lpr -E -o PageSize=A4"
+set PW ""
+set printfiles { }
+set uploadfiles ""
+#### END: VAR INIT ####
+
+
+# ----------------------------------------------------------------------------------------
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# ++++++++ BEGIN: HELPER FUNCTIONS
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# ----------------------------------------------------------------------------------------
+
+
+# Utility interfaces to the low-level command
+# Text-output-tools
+proc capability cap {expr {![catch {exec tput -S << $cap}]}}
+proc colorterm {} {expr {[capability setaf] && [capability setab]}}
+proc tput args {exec tput -S << $args >/dev/tty}
+array set color {black 0 red 1 green 2 yellow 3 blue 4 magenta 5 cyan 6 white 7}
+proc foreground x { if {[colorterm]} { exec tput -S << "setaf $::color($x)" > /dev/tty } }
+proc background x { if {[colorterm]} { exec tput -S << "setab $::color($x)" > /dev/tty } }
+proc reset_color {} { if {[colorterm]} { exec tput sgr0 > /dev/tty } }
+proc sendColor {x msg} {
+	foreground $x
+	send_user -- $msg
+	reset_color
+}
+proc default_color {} { if {[colorterm]} {
+	foreground white
+	background black
+} }
+# Text-output-tools
+
+# Reads in a text
+proc getInput text {
+	send_user -- "$text\n"
+	foreground green
+	send_user -- ">"
+	expect_user -re "(.*)\n"
+	reset_color
+	set input $expect_out(1,string)
+	if {$input == "exit"} {
+		end "Terminated by user."
+	}
+	return $input
+}
+
+# Reads in a password
+proc getPwInput text {
+	stty -echo
+	set pw [getInput $text]
+	sendColor green "*****\n\r"
+	stty echo
+	return $pw
+}
+
+# Reads in a password
+proc defaultize {function paramsA default} {
+	set out [$function {*}$paramsA]
+	if {$out != ""} {
+		return $out
+	} else {
+		return $default
+	}
+}
+
+#Reads in a folder-path
+proc getFolderInput text {
+	set f [makeAbsolute [getInput $text]]
+	while {[file isdirectory $f] != 1} {
+		sendColor yellow "Not a valid folder, enter again.\n"
+		set f [makeAbsolute [getInput "$text"]]
+	}
+	return $f
+}
+
+#Reads in a file-path
+proc getFileInput text {
+	set f [makeAbsolute [getInput $text]]
+	while {[file isfile $f] != 1} {
+		sendColor yellow "Not a valid file, enter again.\n"
+		set f [makeAbsolute [getInput "$text"]]
+	}
+	return $f
+}
+
+# Escapes spaces in a text
+proc esc text {
+	return [regsub -all {\ } $text {\\&}]
+}
+
+proc esc2 text {
+	set t {0}[split $text "\0"]
+	return $t
+}
+
+# Escapes spaces in a text
+proc simple text {
+	set text [regsub -all {\ } $text {}]
+	set text [regsub -all {\n} $text {}]
+	set text [regsub -all {\r} $text {}]
+	set text [regsub -all {\0} $text {}]
+	return 
+}
+
+# print all options in an ARRAY
+proc print_options {ARRAY} {
+	array set thatarr $ARRAY
+	foreach typ [array names thatarr] {
+	    send_user -- "$typ=$thatarr($typ),\n"
+	}
+}
+
+# Returns the absolute Filepath
+proc makeAbsolute {pathname} {
+    file join [pwd] $pathname
+}
+
+# Uploades a files to a specified server
+proc my_scp {ACCOUNT SERVER PW f newf} {
+	foreground blue
+	set timeout 30
+	send_user -- "\n"
+	spawn scp [makeAbsolute $f] $ACCOUNT@$SERVER:[esc $newf]
+	match_max 100000
+	# Look for password prompt
+	expect {
+		-re ".*Connection closed.*" {
+			sendError "\n\n\nUpload failed!\nPlease check the errors above and start over again.\nThis is most likely induced by too many wrong password-attempts and will last quite a time!"
+		}
+		-re ".*Permission denied.*" {
+			sendError "\n\n\nUpload failed!\nPlease check the errors above and start over again.\nYou entered most likely a wrong password!"
+		}
+		-re ".*no such.*" {
+			sendError "\n\n\nUpload failed!\nPlease check the errors above and start over again.\nThe file could not be found."
+		}
+		-re ".*Are.*.*yes.*no.*" {
+			send "yes\n"
+			exp_continue
+			#look for the password prompt
+  		}
+		-re ".*sword.*" {
+			# Send password aka $PW
+			send -- "$PW\r"
+			# send blank line (\r) to make sure we get back to gui
+			send -- "\r\n"
+			exp_continue
+		}
+
+		send_user -- "Upload successful!\n"
+	}
+
+	set timeout -1
+	reset_color
+}
+
+#Adds an item to an print-list
+proc addPrintFile {commands command} {
+	if {$commands != ""} {
+		set commands "$commands\r\n"
+	} else {
+		set commands "mkdir print\r\n\r\n"
+	}
+	set commands "$commands$command"
+	return $commands
+}
+#Adds an item to an upload-list
+proc addUploadFile {files f} {
+	if {$files != ""} {
+		set files "$files\0"
+	}
+	set files "$files[makeAbsolute $f]"
+	return $files
+}
+
+#Counts all files from an upload-list
+proc countUploadFiles {s} {
+        set rc [llength [split $s "\0"]]
+        return $rc
+ }
+
+# Uploades serveral files from a list (created by addUploadFile) to a specified server
+proc my_scp_multi {ACCOUNT SERVER PW files newfolder} {
+	foreground blue
+	set nFiles [countUploadFiles $files]
+	set timeout [expr $nFiles * 60]
+	send_user -- "\n"
+	spawn scp -r {*}[split $files "\0"] $ACCOUNT@$SERVER:[esc $newfolder]
+	match_max 100000
+	# Look for password prompt
+	expect {
+		-re ".*Connection closed.*" {
+			sendError "\n\n\nUpload failed!\nPlease check the errors above and start over again.\nThis is most likely induced by too many wrong password-attempts and will last quite a time!"
+		}
+		-re ".*Permission denied.*" {
+			sendError "\n\n\nUpload failed!\nPlease check the errors above and start over again.\nYou entered most likely a wrong password!"
+		}
+		-re ".*no such.*" {
+			sendError "\n\n\nUpload failed!\nPlease check the errors above and start over again.\nOne of the files could not be found."
+		}
+		-re ".*Are.*.*yes.*no.*" {
+			send "yes\n"
+			exp_continue
+			#look for the password prompt
+  		}
+		-re ".*sword.*" {
+			# Send password aka $PW
+			send -- "$PW\r"
+			# send blank line (\r) to make sure we get back to gui
+			send -- "\r\n"
+			exp_continue
+		}
+
+		send_user -- "Upload successful!\n"
+	}
+	set timeout -1
+	reset_color
+}
+
+# Runs a command on a specified server
+proc my_ssh {ACCOUNT SERVER PW command} {
+	foreground blue
+	set timeout 30
+	send_user -- "\n"
+	spawn ssh $ACCOUNT@$SERVER
+	log_user 0
+	match_max 100000
+	# Look for password prompt
+	expect {
+		-re ".*Connection closed.*" {
+			sendError "\n\n\nSSH-Connection failed!\nPlease check the errors above and start over again.\nThis is most likely induced by too many wrong password-attempts and will last quite a time!"
+		}
+		-re ".*Permission denied.*" {
+			sendError "\n\n\nSSH-Connection failed!\nPlease check the errors above and start over again.\nYou entered most likely a wrong password!"
+		}
+		-re ".*Are.*.*yes.*no.*" {
+			send -- "yes\n"
+			exp_continue
+			#look for the password prompt
+  		}
+		-re ".*sword.*" {
+			# Send password aka $PW
+			send -- "$PW\r"
+			exp_continue
+		}
+		-re ".*Welcome.*\[>:~\].*" {
+			log_user 1
+			send_user -- "Running print script:\n"
+			send -- "$command\r"
+			send_user -- "Done.\n"
+			send -- "logout\r"
+			exp_continue
+		}
+
+		send_user -- "$command executed.\n"
+	}
+
+	set timeout -1
+	log_user 1
+	reset_color
+}
+
+# Sends out an error message and exits
+proc sendError errmsg {	
+	foreground red
+	end $errmsg
+}
+
+# Sends out an message and exits
+proc end msg {
+	send_user -- "$msg\n\n(C) René Vollmer 2014\n\n--Goodbye--\n\n"
+	reset_color
+	getPwInput "Press enter to exit"
+	exit
+}
+
+# Askes the user for the settings for a file to be printet
+proc get_settings void {
+
+	array set cats {
+		0  "'Nuff, print it!"
+		1  "Templates"
+		2  "Several Pages per Sheet"
+		3  "Double-Sided-Options"
+		4  "Pages"
+		5  "Number of Prints"
+		6  "Reverse order"
+		7  "Additional settings"
+	}
+
+	set sel "1"
+	set perPage ""
+	set order ""
+	set binding "two-sided-long-edge"
+	set double "true"
+	set pages ""
+	set no ""
+	set custom ""
+	set order "normal"
+	while {$sel != 0} {
+		send_user -- ">-<>-<>-<>-<\n"
+		sendColor yellow "That's what we have: [generate_setting_string $perPage $order $binding $double $pages $no $custom $order]\n"
+		set sel [getInput "[print_options [array get cats]]Your choice?"]
+		send_user -- ">-<>-<>-<>-<\n"
+		sendColor yellow "You're editing: $cats($sel)\n"
+		if {$sel == 1} {
+			set perPage [getInput "1=Double, 2=2ppDouble, 4=4ppDouble"]
+			set double "true"
+			set order "tblr"
+			set binding "two-sided-long-edge"
+			set sel "0"
+		} else {if {$sel == 2} {
+			set perPage [getInput "2, 4 or 8 Pages per sheet?"]
+			set sel [getInput "How to order them?\n*any*=Print \"top-to-bottom, left-to-right\", 2=Print \"left-to-right, top-to-bottom\", 3=Print \"right-to-left, bottom-to-top\", 4=Print \"bottom-to-top, right-to-left\""]
+			set order "lrtb"
+			if {$sel == "2"} { set order "tblr" }
+			if {$sel == "3"} { set order "rlbt" }
+			if {$sel == "4"} { set order "btrl" }
+		} else { if {$sel == 3} {
+			set double [getInput "*any*=On, false=Off"]
+			if {$double != "false" && $double != "Off" && $double != "off"} {
+				set double "true"
+				set sel [getInput "*any*=Long-Edge-, 2=Short-Edge-Binding ?"]
+				set binding "two-sided-long-edge"
+				if {$sel == "2"} { set binding "two-sided-short-edge" }
+			} else {
+				set double "false"
+			}
+		} else { if {$sel == 4} {
+			set from [getInput "Page from (number or eg 'end-2'):"]
+			set to [getInput "\r to (number or eg 'end', 'end-2'): "]
+			set pages "$from-$to"
+		} else { if {$sel == 5} {
+			set no [getInput "How many times you want it printed (1-30): "]
+		} else { if {$sel == 6} {
+			if ([getInput "any-normal, 2=reverse"] == 2) {
+				set order "reverse"
+			} else {
+				set order "normal"
+			}
+			send_user -- ""
+			if (
+			#expect_user -re "(\\d*)\n"
+			#set no $expect_out(1,string)
+		} else { if {$sel == 7} {
+			send_user -- "not implemented yet.";
+		}}}}}}}
+		send_user -- "We got that.\n"
+	}
+	return [generate_setting_string $perPage $order $binding $double $pages $no $custom $order]
+}
+
+
+# Generates a string for the settings specified.
+proc generate_setting_string {perPage order binding double pages no custom order} {
+	set str ""
+	if {$perPage != ""} { #multiple pages per sheet
+		set str "$str -o number-up=$perPage"
+
+		if {$order != ""} {
+			set str "${str} -o number-up-layout=$order"
+		}
+	}
+
+	if {$double == "false"} { #duplex
+		set str "$str -o HPOption_Duplexer=False -o sides=one-sided"
+	} else {
+		set str "$str -o HPOption_Duplexer=True -o Duplex=DuplexNoTumble"
+		if {$binding != ""} {
+			set str "${str} -o sides=$binding"
+		}
+	}
+
+	if {$pages != ""} { #which pages
+		set str "${str} -o page-ranges=$pages"
+	}
+
+	if {$no != ""} { #How many copies
+		set str "${str} -# $no"
+	}
+	if {$order != ""} {
+		set str "${str} -o outputorder=$order"
+	}
+
+	return "$str$custom -r -o job-priority=100"
+	# -r means "delete the file after printing"
+}
+
+# ----------------------------------------------------------------------------------------
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# ++++++++ END: HELPER FUNCTIONS
+# ++++++++ BEGINN: MAIN PROGRAMM
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# ----------------------------------------------------------------------------------------
+
+#### +++ Greetings
+reset_color
+sendColor blue "###############################################################################\n"
+sendColor blue "###############################################################################\n"
+sendColor blue "###############################################################################\n"
+sendColor blue "######################### UHH PHYSNET PRINTING SCRIPT  ########################\n"
+sendColor blue "#########################        VERSION 0.4b          ########################\n"
+sendColor blue "#########################    (C) RENÉ VOLLMER 2014     ########################\n"
+sendColor blue "#########################    RENE.VOLLMER@GMAIL.COM    ########################\n"
+sendColor blue "#########################         WWW.AYPAC.DE         ########################\n"
+sendColor blue "###############################################################################\n"
+sendColor blue "###############################################################################\n"
+sendColor blue "###############################################################################\n"
+sendColor blue "THIS SCRIPT WILL ASK YOU HOW TO PRINT ALL PDF-FILES INSIDE A SPECIFIED FOLDER\n"
+send_user -- "\nTIPS:\n"
+send_user -- "- Read the README\n"
+send_user -- "- You can stop this script any time with CTRL+C or by entering exit\n"
+send_user -- "- Avoid using ~ , better use /home/yourhomefolder/\n"
+send_user -- "\n"
+sendColor green "- Green text means you have to decide something. Only use the options provided!\n"
+sendColor blue "- Blue text means you have to wait for the script.\n"
+send_user -- "- This color is used for informational texts.\n"
+sendColor red "- Red text only occurs on errors, in which case the script was terminated.\n"
+sendColor blue "################################################################################\n"
+sendColor blue "################################################################################\n"
+
+#### +++ Read in general Information
+#Read in the folder, from which all pdf shall be printed
+set param "Specify the Folder with the PDFs which shall be printed: (Just press Enter for $FOLDER)"
+set FOLDER [defaultize "getFolderInput" [list $param] $FOLDER]
+cd $FOLDER
+#Read in the Username and password for the Server
+send_user -- "Please enter your credentials for \"$SERVER\":\n(Your physnet-account, the same as in the pool-rooms)\n"
+set param "Username? (Just Press Enter for $ACCOUNT)"
+set ACCOUNT [defaultize "getInput" [list $param] $ACCOUNT]
+set PW [getPwInput "Password?"]
+
+#Read in which printer shall be used
+set param "What printer do you want to use (laser30, laser42, Any-Free-Pool2-Printer)? (Just press Enter for $PRINTER)"
+set PRINTER " -P [defaultize "getInput" [list $param] $PRINTER]"
+
+#### +++ Print a Coverpage?
+set COVER [defaultize "getInput" {"Do you want to print a Cover?\nn=no (default), y=yes (use same as last time), s=yes (select a new File)"} "n"]
+if {$COVER == "n"} {
+	send_user -- "Want to save some paper? Great :)\n"
+} else {
+	set coverPath "~/UH Print/Deckblatt.pdf"
+	if {$COVER == "s"} {
+		set coverPath [getFileInput "Where do I find the cover? (Do NOT use ~ !!!)"]
+		sendColor yellow "Uploading...\n"
+		my_scp $ACCOUNT $SERVER $PW $coverPath "$REMOTEFOLDER/Deckblatt.pdf"
+	}
+#	set coverFile [file tail $coverPath]
+#	set remoteFile $REMOTEFOLDER/$coverFile
+	set date [clock format [clock seconds] -format "%d.%m.%Y-%H:%M"]
+	set printfiles [addPrintFile "" "$LPR$PRINTER -p -o Watermark=on -o HPwmSwitch=Watermark -o HPwmTextMessage=\"$date\" -o HPwmFontSize=pt54 -o HPwmBrightness=Darkest '$REMOTEFOLDER/Deckblatt.pdf'"]
+}
+
+#### +++ Ask how the files should be printed
+set files [glob *.pdf]
+foreach f $files {
+	set fname [file tail $f]
+	set remotef "$REMOTEFOLDER/$fname"
+	send_user -- "- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -\n"
+	set sel "n"
+	set sel [getInput "Print $fname? (y|n)"]
+	
+	if {$sel != "n"} {
+		set str [get_settings void]
+		send_user -- "Will print $fname with \"$str\".\n"
+
+		#Add files to upload-List and to print-list
+		set printfiles [addPrintFile $printfiles "$LPR$PRINTER$str '$remotef'"]
+		set uploadfiles [addUploadFile $uploadfiles $fname]
+	} else {
+		send_user -- "Not printing $fname.\n"
+	}
+}
+
+#Done
+send_user -- "\nAll files are processed. Your part is done - you can lean back now and enjoy the show!\n"
+send_user -- "\n------------------------------------------------------------\n"
+
+sendColor yellow "\nUploading PDFs ([countUploadFiles $uploadfiles] files, ~[expr [countUploadFiles $uploadfiles]*15]s)...\n"
+my_scp_multi $ACCOUNT $SERVER $PW $uploadfiles "$REMOTEFOLDER/"
+sendColor yellow "\nDone uploading. Start printing...\n"
+
+#### +++ send the printing commands
+set printfiles [addPrintFile $printfiles "lpq$PRINTER"]
+my_ssh $ACCOUNT $SERVER $PW $printfiles
+
+#### +++ END +++
+sendColor yellow "\n\nThe script ended successfully. You can monitor your printing-tasks via ssh with lpq.\n"
+after 10000 set egal 1
+end ""
+
+#That's it :) Just a few hundred lines of code...
